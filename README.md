@@ -7,7 +7,7 @@
 
 #### Steps to install
 1) clone this repo: `git clone https://github.com/calinbule/sftp-log-monitor.git`
-2) rename the environment variables file: `mv sample.env env`
+2) rename the environment variables file: `mv sample.env .env`
 3) in the .env file, change the variables if needed
 - `LOG_MONITOR_PORT` is the port the app will expose
 - `SLEEP_BETWEEN_LOG_CHECKS` represents the sleep times between polls to the log file that is currently being monitored
