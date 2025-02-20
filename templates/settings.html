@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SFTP Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">SFTP Settings</h1>
+            <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Back to Monitor</a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Hostname</label>
+                    <input id="hostname" type="text" class="mt-1 block w-full border rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Port</label>
+                    <input id="port" type="number" class="mt-1 block w-full border rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Username</label>
+                    <input id="username" type="text" class="mt-1 block w-full border rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input id="password" type="password" class="mt-1 block w-full border rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Remote Directory Path</label>
+                    <input id="remote_dir" type="text" class="mt-1 block w-full border rounded-md px-3 py-2">
+                </div>
+                <button onclick="saveSettings()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadSettings() {
+            fetch('/settings', {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('hostname').value = data.hostname;
+                document.getElementById('port').value = data.port;
+                document.getElementById('username').value = data.username;
+                document.getElementById('password').value = data.password;
+                document.getElementById('remote_dir').value = data.remote_dir;
+            });
+        }
+
+
+        function saveSettings() {
+            const settings = {
+                hostname: document.getElementById('hostname').value,
+                port: document.getElementById('port').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                remote_dir: document.getElementById('remote_dir').value
+            };
+
+            fetch('/settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Settings saved successfully');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadSettings);
+    </script>
+</body>
+</html>

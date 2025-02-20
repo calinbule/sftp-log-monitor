@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    ports:
+      - "${LOG_MONITOR_PORT:-5000}:${LOG_MONITOR_PORT:-5000}"
+    volumes:
+      - logs_data:/app/logs
+      - database_data:/app/database
+    environment:
+      - FLASK_ENV=development
+      - LOG_MONITOR_PORT=${LOG_MONITOR_PORT:-5000}
+      - SLEEP_BETWEEN_LOG_CHECKS=${SLEEP_BETWEEN_LOG_CHECKS:-5}
+      - LOG_EXTENSIONS=${LOG_EXTENSIONS:-log}
+      - POPULATE_DB=${POPULATE_DB:-false}
+      - SFTP_HOSTNAME=${SFTP_HOSTNAME}
+      - SFTP_USERNAME=${SFTP_USERNAME}
+      - SFTP_PASSWORD=${SFTP_PASSWORD}
+      - SFTP_PORT=${SFTP_PORT}
+      - SFTP_REMOTE_DIR=${SFTP_REMOTE_DIR}
+
+volumes:
+  database_data:
+  logs_data:

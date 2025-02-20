@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Log Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #console {
+            font-size: 0.75rem;
+            line-height: 1.25;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="flex items-center gap-4 mb-4">
+        <select id="logFile" class="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Select log file</option>
+        </select>
+
+        <button id="startBtn" onclick="startMonitoring()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            Start
+        </button>
+
+        <button id="pauseBtn" onclick="togglePause()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg" disabled>
+            Pause
+        </button>
+
+        <button id="stopBtn" onclick="stopMonitoring()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg" disabled>
+            Stop
+        </button>
+
+        <div class="h-8 w-px bg-gray-300"></div> <!-- Vertical separator -->
+
+        <a href="/settings" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+            Settings
+        </a>
+    </div>
+
+
+    <div id="console" class="h-[90vh] w-[96%] mx-auto bg-gray-900 text-green-400 font-mono p-4 rounded-lg overflow-y-auto"></div>
+
+    <script>
+        function populateLogFiles() {
+            fetch('/available-logs')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('logFile');
+                    select.innerHTML = '<option value="">Select log file</option>';
+
+                    data.files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const select = document.getElementById('logFile');
+                    select.innerHTML = '<option value="">Error loading log files</option>';
+                });
+        }
+        document.addEventListener('DOMContentLoaded', populateLogFiles);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            populateLogFiles();
+
+            let outputTimer;
+            let isPaused = false;
+            const consoleDiv = document.getElementById('console');
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            window.togglePause = function() {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+                pauseBtn.classList.toggle('bg-yellow-600');
+                pauseBtn.classList.toggle('bg-green-600');
+
+                // Send pause status to backend
+                fetch('/pause', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({isPaused: isPaused})
+                });
+            }
+
+            window.startMonitoring = function() {
+                const logFile = document.getElementById('logFile').value;
+                if (!logFile) {
+                    alert('Please select a log file');
+                    return;
+                }
+
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                consoleDiv.innerHTML = '';
+                isPaused = false;
+
+                fetch('/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({logFile: logFile})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'started') {
+                        outputTimer = setInterval(fetchOutput, 1000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    appendToConsole('Error: ' + error.message);
+                });
+            }
+
+            window.stopMonitoring = function() {
+                fetch('/stop', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'stopped') {
+                        clearInterval(outputTimer);
+                        startBtn.disabled = false;
+                        pauseBtn.disabled = true;
+                        stopBtn.disabled = true;
+                        isPaused = false;
+                        pauseBtn.textContent = 'Pause';
+                        pauseBtn.classList.remove('bg-green-600');
+                        pauseBtn.classList.add('bg-yellow-600');
+                        appendToConsole('Monitoring stopped');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    appendToConsole('Error: ' + error.message);
+                });
+            }
+
+            function appendToConsole(text) {
+                if (text.trim()) {
+                    const formattedLine = document.createElement('div');
+                    formattedLine.textContent = text;
+                    consoleDiv.appendChild(formattedLine);
+                    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                }
+            }
+
+            function fetchOutput() {
+                if (isPaused) return;
+
+                fetch('/output')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.output.length > 0) {
+                        data.output.forEach(line => {
+                            appendToConsole(line);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    appendToConsole('Error: ' + error.message);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
