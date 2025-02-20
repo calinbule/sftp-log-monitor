@@ -86,6 +86,7 @@ class LogMonitor:
             sftp_client = paramiko.SFTPClient.from_transport(transport)
 
             # Modified file filtering to handle multiple extensions
+            logger.info(f"The logs folder is: {settings['remote_dir']}")
             files = []
             for f in sftp_client.listdir(settings['remote_dir']):
                 if any(f.endswith(f'.{ext}') for ext in extensions):
